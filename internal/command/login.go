@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
 	svchost "github.com/hashicorp/terraform-svchost"
@@ -506,7 +507,9 @@ func (c *LoginCommand) interactiveGetTokenByCode(hostname svchost.Hostname, cred
 		return nil, diags
 	}
 
-	if err := server.Close(); err != nil {
+	serverShutdownCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*5))
+	defer cancel()
+	if err := server.Shutdown(serverShutdownCtx); err != nil {
 		// The server will close soon enough when our process exits anyway,
 		// so we won't fuss about it for right now.
 		log.Printf("[WARN] login: callback server can't shut down: %s", err)
